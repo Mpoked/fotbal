@@ -8,7 +8,7 @@
         <div class="row mb-3">
             <?php foreach ($sezony as $s): ?>
                 <div class="col-md-2 col-4 mb-2">
-                    <a href="<?= site_url('main/sezona/' . $s->id) ?>" class="btn btn-outline-dark w-100">
+                    <a href="<?= site_url('sezona/' . $s->id) ?>" class="btn btn-outline-dark w-100">
                         <?= $s->start ?>/<?= $s->finish ?>
                     </a>
                 </div>

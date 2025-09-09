@@ -9,14 +9,22 @@ use App\Libraries\Grouping;
  
 class Main extends BaseController
 {
-    /**
-     * Přehled sezón seskupených po dekádách
-     */
+
+    protected $season;
+    protected $leagueSeason;
+    protected $league;
+
+    public function __construct()
+    {
+        $this->season = new Season();
+        $this->leagueSeason = new LeagueSeason();
+        $this->league = new League();
+    }
+
     public function index()
     {
-        $seasonModel = new Season();
  
-        $seasons = $seasonModel
+        $seasons = $this->season
             ->orderBy('start', 'ASC')
             ->findAll();
  
@@ -28,30 +36,23 @@ class Main extends BaseController
         echo view('index', $data);
     }
  
-    /**
-     * Detail sezóny – soutěže (ligy) v dané sezóně
-     */
+    
+ 
     public function sezona($id)
     {
-        $leagueSeasonModel = new LeagueSeason();
-        $leagueModel       = new League();
- 
-        // najdeme všechny propojené ligy
-        $leagueSeasons = $leagueSeasonModel
+        $souteze = $this->leagueSeason
+            ->select('league.*') // chceme data z tabulky leagues
+            ->join('league', 'league.id = league_season.id_league')
+            ->where('league_season.id_season', $id)
             ->asObject()
-            ->where('season_id', $id)
             ->findAll();
- 
-        $souteze = [];
-        foreach ($leagueSeasons as $ls) {
-            $liga = $leagueModel->find($ls->league_id);
-            if ($liga) {
-                $souteze[] = $liga;
-            }
-        }
- 
-        return view('sezony/sezona', [
+
+        $sezona = $this->season->find($id);
+
+        return view('sezona', [
+            'sezona' => $sezona,
             'souteze' => $souteze
         ]);
     }
+
 }
