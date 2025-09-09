@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\Season;
 use App\Models\League;
 use App\Models\LeagueSeason;
+use App\Models\Article;
 use App\Libraries\Grouping;
  
 class Main extends BaseController
@@ -13,12 +14,14 @@ class Main extends BaseController
     protected $season;
     protected $leagueSeason;
     protected $league;
+    protected $article;
 
     public function __construct()
     {
         $this->season = new Season();
         $this->leagueSeason = new LeagueSeason();
         $this->league = new League();
+        $this->article = new Article();
     }
 
     public function index()
@@ -55,4 +58,18 @@ class Main extends BaseController
         ]);
     }
 
+    public function novinky()
+    {
+        // načteme články
+        $articles = $this->article
+            ->orderBy('date', 'DESC')
+            ->where('top', 1)
+            ->findAll(5);
+    
+        // poskládáme HTML pro každý článek
+        
+    
+        // pošleme do view
+        return view("novinky", ['articles' => $articles]);
+    }
 }

@@ -8,3 +8,4 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', 'Main::index');
 $routes->get('sezona/(:num)', 'Main::sezona/$1');
 $routes->get('novinky', 'Main::novinky');
+
