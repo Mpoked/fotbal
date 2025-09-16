@@ -12,7 +12,16 @@ class Article extends Model
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [];
+
+    // Tohle je klíčové – sloupce, které může model zapisovat
+    protected $allowedFields = [
+        'link',
+        'title',
+        'photo',
+        'date',
+        'top',
+        'text'
+    ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
