@@ -35,7 +35,7 @@
                 <td><?= $a->date ?></td>
                 <td>
                     <!-- Upravit článek -->
-                    <a href="/articles/edit/<?= $a->id ?>" class="btn btn-warning btn-sm">Upravit</a>
+                    <a href="<?= base_url("edit/").$a->id?>" class="btn btn-warning btn-sm">Upravit</a>
 
                     <!-- Smazat článek -->
                     <form action="<?= base_url('delete/' . $a->id) ?>" method="post" class="d-inline" onsubmit="return confirm('Opravdu chcete článek smazat?');">

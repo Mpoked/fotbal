@@ -158,4 +158,72 @@ class Main extends BaseController
     return redirect()->to('/administrace')->with('success', 'Článek byl úspěšně smazán.');
 }
 
+public function edit($id)
+{
+    $article = $this->article->find($id);
+
+    if (!$article) {
+        throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Článek s ID $id nebyl nalezen.");
+    }
+
+    return view('edit', ['article' => $article]);
+}
+
+// uložení změn
+// ... inside the Main class
+// ... inside the Main class
+
+// ... uvnitř třídy Main
+
+public function update($id)
+{
+    // Načtení stávajícího článku pro získání staré cesty k fotce
+    $article = $this->article->find($id);
+
+    if (!$article) {
+        return redirect()->to('/articles')->with('error', 'Článek nebyl nalezen.');
+    }
+
+    // Nastavení cesty pro nahrávání souborů
+    // Používáme ROOTPATH . 'public/' pro absolutní cestu na serveru
+    $uploadPath = ROOTPATH . 'sigma/';
+
+    // Získání nového souboru z požadavku
+    $file = $this->request->getFile('photo');
+
+    // Kontrola, zda byl nahrán platný soubor
+    if ($file && $file->isValid() && !$file->hasMoved()) {
+        // Vygenerování nového, unikátního názvu souboru
+        $newName = $file->getRandomName();
+
+        // Přesunutí souboru do cílové složky
+        $file->move($uploadPath, $newName);
+
+        // Získání starého názvu fotky z databáze
+        $oldPhotoName = $article->photo;
+
+        // Nastavení nového názvu souboru pro databázi
+        $data['photo'] = $newName;
+
+        // Volitelné: Smazání staré fotky ze serveru, pokud existuje
+        // Cesta pro smazání se musí sestavit z cesty k adresáři + starého názvu
+        if ($oldPhotoName && file_exists($uploadPath . $oldPhotoName)) {
+            unlink($uploadPath . $oldPhotoName);
+        }
+    }
+
+    // Příprava ostatních dat pro aktualizaci
+    $data['title'] = $this->request->getPost('title');
+    $data['link'] = 'article/' . $this->request->getPost('link');
+    $data['text'] = $this->request->getPost('text');
+    $data['top'] = $this->request->getPost('top') ? 1 : 0;
+    $data['published'] = $this->request->getPost('published') ? 1 : 0;
+
+    // Provedení aktualizace
+    $this->article->update($id, $data);
+
+    return redirect()->to('/administrace')->with('success', 'Článek byl upraven.');
+}
+
+
 }
