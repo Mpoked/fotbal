@@ -4,3 +4,4 @@
 <link rel="stylesheet" href="<?= base_url('node_modules/flag-icons/css/flag-icons.min.css'); ?>">
 <link rel="stylesheet" href="<?= base_url('node_modules/@fortawesome/fontawesome-free/css/all.min.css'); ?>">
 <link rel="stylesheet" href="<?= base_url('node_modules/flag-icons/css/flag-icons.min.css'); ?>">
+<script src="<?= base_url("node_modules/tinymce/tinymce.min.js") ?>" referrerpolicy="origin" crossorigin="anonymous"></script>
