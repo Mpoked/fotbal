@@ -16,3 +16,5 @@ $routes->post('delete/(:num)', 'Main::delete/$1');
 $routes->post('edit/(:num)', 'Main::edit/$1');
 $routes->get('edit/(:num)', 'Main::edit/$1');
 $routes->post('update/(:num)', 'Main::update/$1');
+$routes->post('upload-image', 'Main::uploadImage');
+

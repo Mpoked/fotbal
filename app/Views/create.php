@@ -1,6 +1,72 @@
 <?= $this->extend('layout/template'); ?>
 
 <?= $this->section('content'); ?>
+<script>
+tinymce.init({
+    license_key: "gpl",
+    selector: '#mytextarea',
+    plugins: 'image code',
+    toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist outdent indent | link image table | code',
+    promotion: false,
+    height: 500,
+
+    relative_urls: false,
+        remove_script_host: false,
+        convert_urls: true,
+
+    automatic_uploads: true,
+    file_picker_types: 'image',
+    images_upload_url: '<?= base_url('upload-image') ?>',
+    image_title: true,
+
+    file_picker_callback: function (cb, value, meta) {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+
+        input.onchange = function () {
+            const file = this.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('<?= base_url('upload-image') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.location) {
+                    cb(result.location, { title: file.name });
+                } else {
+                    alert(result.error || 'Nahrání obrázku selhalo.');
+                }
+            })
+            .catch(() => alert('Chyba při odesílání požadavku.'));
+        };
+        input.click();
+    },
+
+    // Volitelné: umožní drag & drop nahrávání
+    images_upload_handler: function (blobInfo, success, failure) {
+        const formData = new FormData();
+        formData.append('file', blobInfo.blob());
+
+        fetch('<?= base_url('upload-image') ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.location) {
+                success(result.location);
+            } else {
+                failure(result.error || 'Chyba při nahrávání.');
+            }
+        })
+        .catch(() => failure('Chyba při odesílání požadavku.'));
+    }
+});
+</script>
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
@@ -45,7 +111,7 @@
 
                         <div class="mb-3">
                             <label for="text" class="form-label">Text článku</label>
-                            <textarea class="form-control" id="text" name="text" rows="5" placeholder="Obsah článku..." required></textarea>
+                            <textarea class="form-control" id="mytextarea" name="text" rows="10" placeholder="Obsah článku..."></textarea>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -60,4 +126,10 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('articleForm').addEventListener('submit', function() {
+    tinymce.triggerSave(); // uloží obsah TinyMCE zpět do textarea
+});
+</script>
 <?= $this->endSection(); ?>

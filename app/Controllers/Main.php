@@ -7,6 +7,7 @@ use App\Models\League;
 use App\Models\LeagueSeason;
 use App\Models\Article;
 use App\Libraries\Grouping;
+use App\Libraries\UploadImage;
 
 class Main extends BaseController
 {
@@ -84,52 +85,52 @@ class Main extends BaseController
     }
 
     public function store()
-    {
-        $validace = $this->validate([
-            'link'   => 'required|max_length[255]',
-            'title'  => 'required|max_length[255]',
-            'date'   => 'required',
-            'text'   => 'required',
-            'photo'  => 'max_size[photo,2048]|is_image[photo]'
-        ]);
-    
-        if (!$validace) {
-            return redirect()->back()
-                ->withInput()
-                ->with('errors', $this->validator->getErrors());
-        }
-    
-        // upload obrázku
-        $photo = $this->request->getFile('photo');
-        $noveJmeno = null;
-        if ($photo && $photo->isValid() && !$photo->hasMoved()) {
-            $uploadPath = FCPATH . 'sigma/';
-            if (!is_dir($uploadPath)) mkdir($uploadPath, 0755, true);
-            $noveJmeno = time() . '_' . $photo->getName();
-            $photo->move($uploadPath, $noveJmeno);
-        }
-    
-        // převod data na timestamp
-        $dateInput = $this->request->getPost('date'); // např. "2025-10-30"
-        $dateTimestamp = strtotime($dateInput);
-    
-        // uložení článku
-        $id = $this->article->insert([
-            'title'     => $this->request->getPost('title'),
-            'photo'     => $noveJmeno,
-            'date'      => $dateTimestamp,
-            'top'       => $this->request->getPost('top') ? 1 : 0,
-            'published' => $this->request->getPost('published') ? 1 : 0,
-            'text'      => $this->request->getPost('text'),
-        ], true);
-    
-        // vytvoření linku
-        $slug = url_title($this->request->getPost('link'), '-', true);
-        $link = 'article/' . $id . '-' . $slug;
-        $this->article->update($id, ['link' => $link]);
-    
-        return redirect()->to('/administrace')->with('success', 'Článek byl úspěšně přidán.');
+{
+    $validace = $this->validate([
+        'link'   => 'required|max_length[255]',
+        'title'  => 'required|max_length[255]',
+        'date'   => 'required|valid_date[Y-m-d]',
+        'text'   => 'required',
+        'photo'  => 'permit_empty|max_size[photo,2048]|is_image[photo]'
+    ]);
+
+    if (!$validace) {
+        return redirect()->back()
+            ->withInput()
+            ->with('errors', $this->validator->getErrors());
     }
+
+    // upload obrázku přes knihovnu UploadImage
+    $noveJmeno = null;
+    $photo = $this->request->getFile('photo');
+    if ($photo && $photo->isValid() && !$photo->hasMoved()) {
+        $uploader = new \App\Libraries\UploadImage();
+        $result = $uploader->uploadImage($photo, 'sigma/');
+
+        if ($result['success']) {
+            $noveJmeno = basename($result['location']);
+        } else {
+            return redirect()->back()->with('error', $result['error']);
+        }
+    }
+
+    // uložení článku
+    $id = $this->article->insert([
+        'title'     => $this->request->getPost('title'),
+        'photo'     => $noveJmeno,
+        'date'      => strtotime($this->request->getPost('date')),
+        'top'       => $this->request->getPost('top') ? 1 : 0,
+        'published' => $this->request->getPost('published') ? 1 : 0,
+        'text'      => $this->request->getPost('text'),
+    ], true);
+
+    // vytvoření linku
+    $slug = url_title($this->request->getPost('link'), '-', true);
+    $link = 'article/' . $id . '-' . $slug;
+    $this->article->update($id, ['link' => $link]);
+
+    return redirect()->to('/administrace')->with('success', 'Článek byl úspěšně přidán.');
+}
     
 
     public function edit($id)
@@ -144,43 +145,49 @@ class Main extends BaseController
     }
 
     public function update($id)
-{
-    $article = $this->article->find($id);
-    if (!$article) {
-        return redirect()->to('/administrace')->with('error', 'Článek nebyl nalezen.');
-    }
-
-    $data = [
-        'title' => $this->request->getPost('title'),
-        'text'  => $this->request->getPost('text'),
-        'top'   => $this->request->getPost('top') ? 1 : 0,
-        'published' => $this->request->getPost('published') ? 1 : 0,
-        'date' => strtotime($this->request->getPost('date') ?? date('Y-m-d'))
-    ];
-
-    // upload nového obrázku
-    $file = $this->request->getFile('photo');
-    if ($file && $file->isValid() && !$file->hasMoved()) {
-        $uploadPath = FCPATH . 'sigma/';
-        if (!is_dir($uploadPath)) mkdir($uploadPath, 0755, true);
-        $newName = time() . '_' . $file->getName();
-        $file->move($uploadPath, $newName);
-
-        if ($article->photo && file_exists($uploadPath . $article->photo)) {
-            unlink($uploadPath . $article->photo);
+    {
+        $article = $this->article->find($id);
+        if (!$article) {
+            return redirect()->to('/administrace')->with('error', 'Článek nebyl nalezen.');
         }
-
-        $data['photo'] = $newName;
+    
+        $data = [
+            'title' => $this->request->getPost('title'),
+            'text'  => $this->request->getPost('text'),
+            'top'   => $this->request->getPost('top') ? 1 : 0,
+            'published' => $this->request->getPost('published') ? 1 : 0,
+            'date' => strtotime($this->request->getPost('date') ?? date('Y-m-d'))
+        ];
+    
+        // -----------------------------
+        // upload nového obrázku přes knihovnu UploadImage
+        // -----------------------------
+        $file = $this->request->getFile('photo');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $uploader = new UploadImage();
+            $result = $uploader->uploadImage($file, 'sigma/');
+    
+            if ($result['success']) {
+                $uploadPath = FCPATH . 'sigma/';
+                // smazání starého obrázku
+                if ($article->photo && file_exists($uploadPath . $article->photo)) {
+                    unlink($uploadPath . $article->photo);
+                }
+                // uložíme jen název souboru
+                $data['photo'] = basename($result['location']);
+            } else {
+                return redirect()->back()->with('error', $result['error']);
+            }
+        }
+    
+        // aktualizace linku
+        $slug = url_title($this->request->getPost('link'), '-', true);
+        $data['link'] = 'article/' . $id . '-' . $slug;
+    
+        $this->article->update($id, $data);
+    
+        return redirect()->to('/administrace')->with('success', 'Článek byl upraven.');
     }
-
-    // aktualizace linku
-    $slug = url_title($this->request->getPost('link'), '-', true);
-    $data['link'] = 'article/' . $id . '-' . $slug;
-
-    $this->article->update($id, $data);
-
-    return redirect()->to('/administrace')->with('success', 'Článek byl upraven.');
-}
 
     public function delete($id)
     {
@@ -199,4 +206,27 @@ class Main extends BaseController
 
         return redirect()->to('/administrace')->with('success', 'Článek byl úspěšně smazán.');
     }
+
+    public function uploadImage()
+{
+    $file = $this->request->getFile('file');
+
+    if (!$file || !$file->isValid()) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON(['error' => 'Soubor nebyl nahrán nebo je neplatný.']);
+    }
+
+    $uploadLib = new UploadImage();
+    $result = $uploadLib->uploadImage($file, 'sigma/');
+
+    if (!$result['success']) {
+        return $this->response
+            ->setStatusCode(500)
+            ->setJSON(['error' => $result['error']]);
+    }
+
+    return $this->response->setJSON(['location' => $result['location']]);
+}
+
 }

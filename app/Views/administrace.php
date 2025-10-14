@@ -32,7 +32,7 @@
                 <td><?= $a->id ?></td>
                 <td><?= $a->link ?></td>
                 <td><?= $a->title ?></td>
-                <td><?= $a->date ?></td>
+                <td><?= date('d.m.Y', $a->date) ?></td>
                 <td>
                     <!-- Upravit článek -->
                     <a href="<?= base_url("edit/").$a->id?>" class="btn btn-warning btn-sm">Upravit</a>
